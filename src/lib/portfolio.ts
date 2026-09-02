@@ -3,14 +3,16 @@ import {
   getCustomers,
   getLatestHealthSnapshot,
   getMilestonesForCustomer,
+  getNextActionsForCustomer,
   getRisksForCustomer,
 } from '../services/customerRepository';
-import { LIFECYCLE_LABELS, STATUS_LABELS, TREND_LABELS } from './labels';
+import { deriveAdoptionLevelLabel, RISK_SEVERITY_RANK } from './customer360/shared';
+import { LIFECYCLE_LABELS_ES, STATUS_LABELS_ES, TREND_LABELS_ES } from './labels';
 import type { HealthStatus } from '../types/health';
 import type { HealthSnapshot } from '../types/healthSnapshot';
 import type { Customer } from '../types/customer';
 import type { Milestone } from '../types/milestone';
-import type { Risk, RiskSeverity } from '../types/risk';
+import type { Risk } from '../types/risk';
 
 // Cross-customer aggregation only. No scoring math happens here — that's healthEngine's
 // job. This module calls the repository, never src/data/* directly.
@@ -19,12 +21,14 @@ export interface PortfolioSummary {
   accountCount: number;
   totalArrUsd: number;
   statusCounts: Record<HealthStatus, number>;
+  arrByStatus: Record<HealthStatus, number>;
   improvingCount: number;
 }
 
 export function getPortfolioSummary(): PortfolioSummary {
   const customers = getCustomers();
   const statusCounts: Record<HealthStatus, number> = { green: 0, yellow: 0, red: 0 };
+  const arrByStatus: Record<HealthStatus, number> = { green: 0, yellow: 0, red: 0 };
   let improvingCount = 0;
   let totalArrUsd = 0;
 
@@ -33,10 +37,11 @@ export function getPortfolioSummary(): PortfolioSummary {
     const snapshot = getLatestHealthSnapshot(customer.id);
     if (!snapshot) continue;
     statusCounts[snapshot.finalStatus] += 1;
+    arrByStatus[snapshot.finalStatus] += customer.arrUsd;
     if (snapshot.trend === 'improving') improvingCount += 1;
   }
 
-  return { accountCount: customers.length, totalArrUsd, statusCounts, improvingCount };
+  return { accountCount: customers.length, totalArrUsd, statusCounts, arrByStatus, improvingCount };
 }
 
 export interface ModuleAdoption {
@@ -45,8 +50,8 @@ export interface ModuleAdoption {
   totalAccounts: number;
 }
 
-// Derived cross-account product-usage pattern (e.g. for a future Portfolio Insights
-// screen) — computed from Customer.modulesUsed, not hand-authored prose.
+// Derived cross-account product-usage pattern (used by Señales) — computed from
+// Customer.modulesUsed, never hand-authored prose.
 export function getModuleAdoption(): ModuleAdoption[] {
   const customers = getCustomers();
   const moduleNames = new Set<string>();
@@ -76,18 +81,18 @@ export function getPortfolioSnapshotDate(): string | undefined {
 export interface PortfolioTableRow {
   customer: Customer;
   snapshot: HealthSnapshot | undefined;
-  primaryRisk: Risk | undefined;
-  nextMilestone: Milestone | undefined;
+  adoptionLevelLabel: string | undefined;
+  primaryAttention: Risk | undefined;
+  nextMilestoneLabel: string | undefined;
 }
-
-const RISK_SEVERITY_RANK: Record<RiskSeverity, number> = { high: 3, medium: 2, low: 1 };
-const MILESTONE_STATUS_RANK: Record<Milestone['status'], number> = { in_progress: 2, planned: 1, reached: 0 };
 
 function selectPrimaryRisk(risks: Risk[]): Risk | undefined {
   return risks
     .filter((risk) => risk.status === 'open' || risk.status === 'monitoring')
     .sort((a, b) => RISK_SEVERITY_RANK[b.severity] - RISK_SEVERITY_RANK[a.severity])[0];
 }
+
+const MILESTONE_STATUS_RANK: Record<Milestone['status'], number> = { in_progress: 2, planned: 1, reached: 0 };
 
 function selectNextMilestone(milestones: Milestone[]): Milestone | undefined {
   return milestones
@@ -97,13 +102,28 @@ function selectNextMilestone(milestones: Milestone[]): Milestone | undefined {
 
 // One assembled view-model row per customer, built entirely from repository data —
 // no raw data/* import here, no hand-typed scores, no invented risks/milestones.
+// The milestone label prefers the account's Spanish NextAction headline (product
+// language is Spanish LATAM) — Milestone.title itself stays the Phase 1 canonical
+// English field, unrelated to display language.
 export function getPortfolioTableRows(): PortfolioTableRow[] {
-  return getCustomers().map((customer) => ({
-    customer,
-    snapshot: getLatestHealthSnapshot(customer.id),
-    primaryRisk: selectPrimaryRisk(getRisksForCustomer(customer.id)),
-    nextMilestone: selectNextMilestone(getMilestonesForCustomer(customer.id)),
-  }));
+  return getCustomers().map((customer) => {
+    const snapshot = getLatestHealthSnapshot(customer.id);
+    const nextAction = getNextActionsForCustomer(customer.id)[0];
+    const nextMilestone = selectNextMilestone(getMilestonesForCustomer(customer.id));
+    return {
+      customer,
+      snapshot,
+      adoptionLevelLabel: snapshot ? deriveAdoptionLevelLabel(snapshot.dimensions.workflowAdoption) : undefined,
+      primaryAttention: selectPrimaryRisk(getRisksForCustomer(customer.id)),
+      nextMilestoneLabel: nextAction?.headline ?? nextMilestone?.title,
+    };
+  });
+}
+
+// Accounts requiring attention right now — Yellow or Red status. Green is never
+// shown here: yellow means attention, not failure, and green needs neither.
+export function getAttentionAccounts(): PortfolioTableRow[] {
+  return getPortfolioTableRows().filter((row) => row.snapshot && row.snapshot.finalStatus !== 'green');
 }
 
 export interface PortfolioReadoutItem {
@@ -116,7 +136,7 @@ export interface PortfolioReadoutItem {
 // out is editorial judgment, but every number in the statement is pulled live from
 // the repository/health engine, never hand-typed, so it can't drift from the data.
 export function getPortfolioReadout(): PortfolioReadoutItem[] {
-  const items = [siemensBenchmarkReadout(), balleImprovingReadout(), fibropticaRoleReadout()];
+  const items = [siemensBenchmarkReadout(), balleImprovingReadout(), manprecMomentumReadout(), fibropticaAdoptionReadout()];
   return items.filter((item): item is PortfolioReadoutItem => item !== undefined);
 }
 
@@ -126,7 +146,7 @@ function siemensBenchmarkReadout(): PortfolioReadoutItem | undefined {
   return {
     id: 'readout-siemens-benchmark',
     customerId: 'siemens',
-    statement: `Siemens is the portfolio benchmark: ${LIFECYCLE_LABELS[snapshot.lifecycle]} lifecycle at ${snapshot.finalScore} (${STATUS_LABELS[snapshot.finalStatus]}), with ${snapshot.expansionReadiness ?? 'unassessed'} expansion readiness.`,
+    statement: `Siemens es la cuenta de referencia del portafolio: valor verificado y adopción independiente, con ${LIFECYCLE_LABELS_ES[snapshot.lifecycle].toLowerCase()} confirmado.`,
   };
 }
 
@@ -136,16 +156,26 @@ function balleImprovingReadout(): PortfolioReadoutItem | undefined {
   return {
     id: 'readout-balle-improving',
     customerId: 'grupo-balle',
-    statement: `Grupo Balle is ${STATUS_LABELS[snapshot.finalStatus]} (${snapshot.finalScore}) but ${TREND_LABELS[snapshot.trend].toLowerCase()} as recent workflow usage strengthens.`,
+    statement: `Grupo Balle está ${TREND_LABELS_ES[snapshot.trend].label.toLowerCase()} tras los retrasos de implementación, con actividad de flujo más fuerte en semanas recientes.`,
   };
 }
 
-function fibropticaRoleReadout(): PortfolioReadoutItem | undefined {
+function manprecMomentumReadout(): PortfolioReadoutItem | undefined {
+  const snapshot = getLatestHealthSnapshot('manprec');
+  if (!snapshot) return undefined;
+  return {
+    id: 'readout-manprec-momentum',
+    customerId: 'manprec',
+    statement: `Manprec muestra un momentum fuerte de implementación a adopción, con ${STATUS_LABELS_ES[snapshot.finalStatus].toLowerCase()} (${snapshot.finalScore}) aun en etapas tempranas.`,
+  };
+}
+
+function fibropticaAdoptionReadout(): PortfolioReadoutItem | undefined {
   const customer = getCustomerById('fibroptica');
   if (!customer || customer.users.active === undefined) return undefined;
   return {
-    id: 'readout-fibroptica-roles',
+    id: 'readout-fibroptica-adoption-breadth',
     customerId: 'fibroptica',
-    statement: `Fibroptica's main open question is required-role activation: only ${customer.users.active} of ${customer.users.total} users are active.`,
+    statement: `Fibroptica ha demostrado valor de producto, pero la amplitud de adopción sigue siendo la pregunta abierta: sólo ${customer.users.active} de ${customer.users.total} usuarios están activos.`,
   };
 }

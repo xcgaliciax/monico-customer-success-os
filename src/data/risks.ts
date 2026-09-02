@@ -28,6 +28,8 @@ export const risks: Risk[] = [
     severity: 'medium',
     status: 'open',
     relatedDimension: 'workflowAdoption',
+    shortTitle: 'Dependencia del momentum de implementación',
+    shortCause: 'Sostener el uso reciente del flujo y avanzar hacia una adopción operativa durable.',
   },
   {
     id: 'risk-fibroptica-role-activation',
@@ -38,5 +40,7 @@ export const risks: Risk[] = [
     severity: 'medium',
     status: 'open',
     relatedDimension: 'requiredRoleActivation',
+    shortTitle: 'Activación de roles requeridos',
+    shortCause: 'Sólo 3 de 13 usuarios están activos; falta confirmar si son los roles operativos correctos.',
   },
 ];

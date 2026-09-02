@@ -9,6 +9,7 @@ import { milestones } from '../data/milestones';
 import { nextActions } from '../data/nextActions';
 import { platformTelemetrySnapshots } from '../data/platformTelemetry';
 import { risks } from '../data/risks';
+import { signals } from '../data/signals';
 import { timelineEvents } from '../data/timelineEvents';
 import { valueMetrics } from '../data/valueMetrics';
 import type { AdoptionSnapshot } from '../types/adoption';
@@ -20,6 +21,7 @@ import type { Insight, InsightSection } from '../types/insight';
 import type { Milestone } from '../types/milestone';
 import type { NextAction, NextActionScope } from '../types/nextAction';
 import type { PlatformTelemetrySnapshot } from '../types/platformTelemetry';
+import type { PortfolioSignal } from '../types/signal';
 import type { Risk } from '../types/risk';
 import type { TimelineEvent } from '../types/timelineEvent';
 import type { ValueMetricEntry } from '../types/valueMetric';
@@ -74,6 +76,12 @@ export function getInsightsForCustomer(customerId: string, section: InsightSecti
   return insights.filter((insight) => insight.customerId === customerId && insight.section === section);
 }
 
+// All insights for a customer regardless of section — used by the Historial view
+// to fold curated conclusions into the account timeline.
+export function getAllInsightsForCustomer(customerId: string): Insight[] {
+  return insights.filter((insight) => insight.customerId === customerId);
+}
+
 export function getValueMetricsForCustomer(customerId: string): ValueMetricEntry[] {
   return valueMetrics.filter((metric) => metric.customerId === customerId);
 }
@@ -90,6 +98,13 @@ export function getLatestPlatformTelemetry(customerId: string): PlatformTelemetr
     .sort((a, b) => b.snapshotDate.localeCompare(a.snapshotDate))[0];
 }
 
-export function getNextActionsForCustomer(customerId: string, scope: NextActionScope): NextAction[] {
-  return nextActions.filter((action) => action.customerId === customerId && action.scope === scope);
+// scope is optional — most accounts have exactly one NextAction (their current
+// primary next step), reused as the closing line on every deep tab. Pass a scope
+// only when an account has more than one and a tab needs a specific one.
+export function getNextActionsForCustomer(customerId: string, scope?: NextActionScope): NextAction[] {
+  return nextActions.filter((action) => action.customerId === customerId && (!scope || action.scope === scope));
+}
+
+export function getPortfolioSignals(): PortfolioSignal[] {
+  return signals;
 }

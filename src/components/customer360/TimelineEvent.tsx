@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { formatMonoDateShort } from '../../lib/formatters';
-import type { TimelineEvent as TimelineEventModel, TimelineMarkerType } from '../../types/timelineEvent';
+import type { TimelineDisplayItem, TimelineMarkerType } from '../../types/timelineEvent';
 
 const MARKER_COLOR_CLASS: Record<TimelineMarkerType, string> = {
   snapshot_approved: 'bg-monico-blue',
@@ -12,7 +12,7 @@ const MARKER_COLOR_CLASS: Record<TimelineMarkerType, string> = {
 
 // Spec §09: 4-column grid (date · marker · event · chevron), hairline above, no
 // vertical connecting line, no card per event.
-export function TimelineEvent({ event, href }: { event: TimelineEventModel; href?: string }) {
+export function TimelineEvent({ event, href }: { event: TimelineDisplayItem; href?: string }) {
   const content = (
     <div className="grid grid-cols-[68px_13px_1fr_14px] items-start gap-3 border-t border-grey-2 py-[15px]">
       <span className="font-mono text-[11px] text-grey-5">{event.dateLabel ?? formatMonoDateShort(event.date, { withYear: false })}</span>

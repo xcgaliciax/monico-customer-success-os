@@ -1,7 +1,7 @@
 import { TimelineEvent } from './TimelineEvent';
-import type { TimelineEvent as TimelineEventModel } from '../../types/timelineEvent';
+import type { TimelineDisplayItem } from '../../types/timelineEvent';
 
-export function Timeline({ events, hrefFor }: { events: TimelineEventModel[]; hrefFor?: (event: TimelineEventModel) => string }) {
+export function Timeline({ events, hrefFor }: { events: TimelineDisplayItem[]; hrefFor?: (event: TimelineDisplayItem) => string }) {
   return (
     <div>
       {events.map((event) => (

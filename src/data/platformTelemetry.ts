@@ -1,10 +1,9 @@
 import type { PlatformTelemetrySnapshot } from '../types/platformTelemetry';
 
 // Operational snapshot from the monico Command Center. This is platform telemetry,
-// not Customer Health — it must never be blended into HealthScore. Confirmed by the
-// user as the one class of MEDIDO data in this v0.1 seed (everything else customer-
-// facing on the Adoption screen is a CS-captured baseline). Only Siemens is seeded
-// in Phase 3A.
+// not Customer Health — it must never be blended into HealthScore. This is the one
+// class of MEDIDO data in this v0.1 seed (everything else customer-facing on the
+// Adoption screen is a CS-captured baseline).
 export const platformTelemetrySnapshots: PlatformTelemetrySnapshot[] = [
   {
     id: 'platform-siemens-2026-09-01',
@@ -21,6 +20,54 @@ export const platformTelemetrySnapshots: PlatformTelemetrySnapshot[] = [
     costUsdFromFailures: 0.41,
     archivedErrors: 4,
     trashedCount: 4,
+    sourceRef: 'E03',
+  },
+  {
+    id: 'platform-balle-2026-09-01',
+    customerId: 'grupo-balle',
+    snapshotDate: '2026-09-01',
+    platformProcessingHealthScore: 85,
+    processingSuccessRatePct: 78,
+    activeProjects: 12,
+    completedProjects: 18,
+    avgProcessingTimeLabel: '5 min 16 s',
+    p95ProcessingTimeLabel: '18 min 46 s',
+    tokensConsumed: 88_509_043,
+    costUsdTotal: 75.28,
+    archivedErrors: 5,
+    trashedCount: 6,
+    sourceRef: 'E03',
+  },
+  {
+    id: 'platform-manprec-2026-09-01',
+    customerId: 'manprec',
+    snapshotDate: '2026-09-01',
+    platformProcessingHealthScore: 91,
+    processingSuccessRatePct: 87,
+    activeProjects: 11,
+    completedProjects: 13,
+    avgProcessingTimeLabel: '6 min 54 s',
+    p95ProcessingTimeLabel: '21 min 40 s',
+    tokensConsumed: 69_083_784,
+    costUsdTotal: 60.0,
+    archivedErrors: 1,
+    trashedCount: 3,
+    sourceRef: 'E03',
+  },
+  {
+    id: 'platform-fibroptica-2026-09-01',
+    customerId: 'fibroptica',
+    snapshotDate: '2026-09-01',
+    platformProcessingHealthScore: 86,
+    processingSuccessRatePct: 77,
+    activeProjects: 9,
+    completedProjects: 10,
+    avgProcessingTimeLabel: '8 min 51 s',
+    p95ProcessingTimeLabel: '28 min 04 s',
+    tokensConsumed: 72_564_713,
+    costUsdTotal: 48.76,
+    archivedErrors: 2,
+    trashedCount: 2,
     sourceRef: 'E03',
   },
 ];

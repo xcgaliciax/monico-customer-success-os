@@ -14,7 +14,7 @@ export interface PlatformTelemetrySnapshot {
   p95ProcessingTimeLabel: string; // e.g. "21 min 12 s"
   tokensConsumed: number;
   costUsdTotal: number;
-  costUsdFromFailures: number;
+  costUsdFromFailures?: number; // omitted where the source doesn't break out failure cost
   archivedErrors: number;
   trashedCount: number;
   sourceRef?: string; // e.g. "E03"

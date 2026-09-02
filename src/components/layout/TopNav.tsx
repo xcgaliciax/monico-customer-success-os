@@ -4,8 +4,8 @@ import { getPortfolioSnapshotDate } from '../../lib/portfolio';
 
 const NAV_ITEMS = [
   { to: '/', label: 'Panel', end: true },
-  { to: '/customers', label: 'Cuentas', end: false },
-  { to: '/insights', label: 'Señales', end: false },
+  { to: '/accounts', label: 'Cuentas', end: false },
+  { to: '/signals', label: 'Señales', end: false },
 ];
 
 // Spec §02 "Shell de aplicación": 52px height, white surface, hairline bottom.

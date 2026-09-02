@@ -18,3 +18,15 @@ export interface TimelineEvent {
   title: string;
   interpretation: string;
 }
+
+// Display-only shape shared by the Timeline/TimelineEvent components and every
+// view-model that feeds them (curated seed TimelineEvents and computed
+// HistoryEntry rows are both structurally compatible with this, without a cast).
+export interface TimelineDisplayItem {
+  id: string;
+  date: string;
+  dateLabel?: string;
+  markerType: TimelineMarkerType;
+  title: string;
+  interpretation: string;
+}

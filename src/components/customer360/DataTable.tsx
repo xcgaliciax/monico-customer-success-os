@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import type { ReactNode } from 'react';
 
 export interface DataTableColumn<T> {
@@ -13,11 +14,15 @@ interface DataTableProps<T> {
   rows: T[];
   getRowKey: (row: T) => string;
   emptyLabel?: string;
+  /** When provided, the whole row navigates here on click — row grammar, not a card. */
+  getRowHref?: (row: T) => string;
 }
 
 // Spec §08: the canonical table pattern every product table derives from. 1px
 // grey-3 border, 12px radius, grey-2 header, no zebra, hover fill only, no shadow.
-export function DataTable<T>({ columns, rows, getRowKey, emptyLabel }: DataTableProps<T>) {
+export function DataTable<T>({ columns, rows, getRowKey, emptyLabel, getRowHref }: DataTableProps<T>) {
+  const navigate = useNavigate();
+
   return (
     <div className="overflow-hidden overflow-x-auto rounded-xl border border-grey-3">
       <table className="w-full min-w-[640px] border-collapse">
@@ -49,7 +54,11 @@ export function DataTable<T>({ columns, rows, getRowKey, emptyLabel }: DataTable
           {rows.map((row, index) => (
             <tr
               key={getRowKey(row)}
-              className={index < rows.length - 1 ? 'border-b border-grey-2 hover:bg-grey-1' : 'hover:bg-grey-1'}
+              onClick={getRowHref ? () => navigate(getRowHref(row)) : undefined}
+              className={[
+                index < rows.length - 1 ? 'border-b border-grey-2' : '',
+                getRowHref ? 'cursor-pointer hover:bg-grey-1' : 'hover:bg-grey-1',
+              ].join(' ')}
             >
               {columns.map((column) => (
                 <td

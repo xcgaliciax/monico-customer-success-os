@@ -17,12 +17,12 @@ export function Customer360Layout() {
     return <PlaceholderPage eyebrow="Customer Success OS" title="Cuenta no encontrada" message="No existe una cuenta con este identificador." />;
   }
 
-  const isResumen = location.pathname === `/customers/${customerId}` || location.pathname.endsWith('/resumen');
+  const isResumen = location.pathname === `/customers/${customerId}`;
   const { customer, snapshot } = viewModel;
 
   const actions: PageActionSpec[] = [
-    { id: 'evidence', label: 'Ver evidencia', variant: 'secondary', href: `/customers/${customerId}/evidencia` },
-    { id: 'export', label: 'Exportar', variant: 'primary', onClick: () => window.print() },
+    { id: 'evidence', label: 'Ver evidencia', variant: 'secondary', href: `/customers/${customerId}/evidence` },
+    { id: 'export', label: 'Exportar', variant: 'primary', href: `/customers/${customerId}/report` },
   ];
 
   return (

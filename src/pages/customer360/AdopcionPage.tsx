@@ -7,7 +7,7 @@ import { NextAction } from '../../components/customer360/NextAction';
 import { ProvenanceLabel } from '../../components/customer360/ProvenanceLabel';
 import { SectionHeader } from '../../components/customer360/SectionHeader';
 import { WorkflowDepth } from '../../components/customer360/WorkflowDepth';
-import { getAdopcionViewModel } from '../../lib/customer360';
+import { buildCustomerAdoptionView, deriveAdoptionLevelLabel } from '../../lib/customer360';
 import { formatTokens, formatUsd2 } from '../../lib/formatters';
 import { MODULE_LABELS_ES, MODULE_USAGE_STATE_LABELS_ES } from '../../lib/labels';
 import type { ModuleUsage, ModuleUsageState } from '../../types/adoption';
@@ -15,6 +15,7 @@ import type { ModuleUsage, ModuleUsageState } from '../../types/adoption';
 const MODULE_STATE_TEXT_CLASS: Record<ModuleUsageState, string> = {
   recurring: 'text-health-green',
   selective: 'text-grey-6',
+  in_use: 'text-grey-6',
   low: 'text-c-orange',
   no_evidence: 'text-grey-5',
   not_applicable: 'text-c-orange',
@@ -24,7 +25,7 @@ const PERIODS = ['7 d', '30 d', '60 d', '90 d'];
 
 export function AdopcionPage() {
   const { customerId } = useParams<{ customerId: string }>();
-  const viewModel = customerId ? getAdopcionViewModel(customerId) : undefined;
+  const viewModel = customerId ? buildCustomerAdoptionView(customerId) : undefined;
 
   if (!viewModel) {
     return (
@@ -36,7 +37,6 @@ export function AdopcionPage() {
 
   const {
     header,
-    levelLabel,
     blockerSummary,
     headlineMetrics,
     moduleUsage,
@@ -51,10 +51,10 @@ export function AdopcionPage() {
     nextAction,
   } = viewModel;
 
-  const evidenceHref = `/customers/${header.customer.id}/evidencia`;
-  const commandCenterHref = `/customers/${header.customer.id}/evidencia`;
+  const evidenceHref = `/customers/${header.customer.id}/evidence`;
+  const levelLabel = header.snapshot ? deriveAdoptionLevelLabel(header.snapshot.dimensions.workflowAdoption) : '—';
 
-  const recurringOrSelective = moduleUsage.filter((m) => m.state === 'recurring' || m.state === 'selective').length;
+  const recurringOrSelective = moduleUsage.filter((m) => m.state === 'recurring' || m.state === 'selective' || m.state === 'in_use').length;
   const noEvidence = moduleUsage.filter((m) => m.state === 'no_evidence').length;
 
   const moduleColumns: DataTableColumn<ModuleUsage>[] = [
@@ -77,27 +77,18 @@ export function AdopcionPage() {
 
   return (
     <div className="space-y-11">
-      <div className="grid grid-cols-1 gap-x-[72px] gap-y-6 lg:grid-cols-[1fr_420px]">
-        <div>
-          <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-grey-5">Adopción</p>
-          <div className="mt-2 flex items-baseline gap-3">
-            <span className="text-[64px] font-extrabold leading-none tracking-[-0.04em] text-ink">{levelLabel}</span>
-            <span className="text-sm text-grey-5">{blockerSummary}</span>
-          </div>
+      <div>
+        <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-grey-5">Adopción</p>
+        <div className="mt-2 flex items-baseline gap-3">
+          <span className="text-[64px] font-extrabold leading-none tracking-[-0.04em] text-ink">{levelLabel}</span>
+          <span className="text-sm text-grey-5">{blockerSummary}</span>
         </div>
-        <p className="self-end text-[15px] leading-[1.5] text-grey-6">
-          monico está incorporado a licitaciones reales y el equipo opera sin acompañamiento de Customer Success.
-        </p>
       </div>
 
-      <MetricGroup items={headlineMetrics.map((metric) => ({
-        value: metric.value,
-        label: metric.label,
-        provenance: { class: metric.provenanceClass, confidence: metric.confidence },
-      }))} />
+      <MetricGroup items={headlineMetrics.map((metric) => ({ value: metric.value, label: metric.label, provenance: metric.provenance }))} />
 
       <div>
-        <SectionHeader eyebrow="Adopción por módulo" note={`${recurringOrSelective} con uso recurrente · ${noEvidence} sin evidencia`} />
+        <SectionHeader eyebrow="Adopción por módulo" note={`${recurringOrSelective} con uso · ${noEvidence} sin evidencia`} />
         <div className="mt-4">
           <DataTable columns={moduleColumns} rows={moduleUsage} getRowKey={(row) => row.module} />
         </div>
@@ -105,18 +96,27 @@ export function AdopcionPage() {
 
       <div className="grid grid-cols-1 gap-x-[72px] gap-y-8 lg:grid-cols-[1fr_420px]">
         <div>
-          <SectionHeader eyebrow="Profundidad del flujo" note="Adopción significativa, no inicios de sesión" />
+          <SectionHeader eyebrow="Profundidad del flujo" note={workflowDepth ? 'Adopción significativa, no inicios de sesión' : undefined} />
           <div className="mt-4">
-            <WorkflowDepth
-              steps={workflowDepth}
-              note="No toda licitación recorre todos los módulos y eso no es una brecha: lo que se mide es que el trabajo relevante ocurra de punta a punta."
-            />
+            {workflowDepth ? (
+              <WorkflowDepth
+                steps={workflowDepth}
+                note="No todo proceso recorre todos los módulos y eso no es una brecha: lo que se mide es que el trabajo relevante ocurra de punta a punta."
+              />
+            ) : (
+              <p className="text-sm text-grey-5">Detalle de profundidad de flujo no disponible aún para esta cuenta.</p>
+            )}
           </div>
         </div>
         <div>
-          <SectionHeader eyebrow="Usuarios y roles" note={`${usersActive ?? 0} de ${usersTotal} con actividad`} />
+          <SectionHeader eyebrow="Usuarios y roles" note={`${usersActive ?? '—'} de ${usersTotal} con actividad`} />
           <div className="mt-4 space-y-5">
-            {!perUserTelemetryAvailable && <EmptyState variant="no_instrumented" detail={`${usersTotal} asientos, ${usersActive ?? 0} con actividad`} />}
+            {!perUserTelemetryAvailable && (
+              <EmptyState
+                variant="no_instrumented"
+                detail={usersActive !== undefined ? `${usersTotal} asientos, ${usersActive} con actividad` : `${usersTotal} asientos, conteo activo no disponible`}
+              />
+            )}
             {requiredRoleActivationScore !== undefined && (
               <div>
                 <div className="flex items-baseline justify-between">
@@ -124,7 +124,8 @@ export function AdopcionPage() {
                   <span className="text-lg font-bold tabular-nums text-ink">{requiredRoleActivationScore} / 100</span>
                 </div>
                 <p className="mt-2 text-[13px] text-grey-5">
-                  Los roles operativos requeridos participan. La activación de roles pesa más que la utilización total de asientos: {usersActive ?? 0} de {usersTotal} no es una brecha por sí sola.
+                  La activación de roles pesa más que la utilización total de asientos.
+                  {usersActive !== undefined ? ` ${usersActive} de ${usersTotal} no es una brecha por sí sola.` : ''}
                 </p>
               </div>
             )}
@@ -162,10 +163,10 @@ export function AdopcionPage() {
           </div>
           <div className="mt-3 flex items-center justify-between gap-4 text-xs text-grey-5">
             <span>
-              Consumo trazado {formatTokens(platformTelemetry.tokensConsumed)} tokens · costo total {formatUsd2(platformTelemetry.costUsdTotal)}, de
-              los cuales {formatUsd2(platformTelemetry.costUsdFromFailures)} asociados a fallos
+              Consumo trazado {formatTokens(platformTelemetry.tokensConsumed)} tokens · costo total {formatUsd2(platformTelemetry.costUsdTotal)}
+              {platformTelemetry.costUsdFromFailures !== undefined ? `, de los cuales ${formatUsd2(platformTelemetry.costUsdFromFailures)} asociados a fallos` : ''}
             </span>
-            <a href={commandCenterHref} className="flex-none font-medium text-monico-blue hover:underline">
+            <a href={evidenceHref} className="flex-none font-medium text-monico-blue hover:underline">
               Ver Command Center →
             </a>
           </div>
@@ -189,7 +190,11 @@ export function AdopcionPage() {
         <div>
           <SectionHeader eyebrow="Insights de adopción" />
           <div className="mt-2">
-            <InsightList items={adoptionInsights.map((insight) => ({ id: insight.id, statement: insight.statement, context: insight.context, href: evidenceHref }))} />
+            {adoptionInsights.length > 0 ? (
+              <InsightList items={adoptionInsights.map((insight) => ({ id: insight.id, statement: insight.statement, context: insight.context, href: evidenceHref }))} />
+            ) : (
+              <p className="py-4 text-sm text-grey-5">Aún no hay insights curados para esta cuenta.</p>
+            )}
           </div>
         </div>
       </div>

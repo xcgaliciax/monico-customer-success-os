@@ -1,6 +1,7 @@
 import type { Confidence, DimensionKey, ExpansionReadiness, HealthStatus, Lifecycle, Trend } from '../types/health';
 import type { ModuleKey, ModuleUsageState, WorkflowDepthStepStatus } from '../types/adoption';
 import type { ProvenanceClass } from '../types/provenance';
+import type { EvidenceType } from '../types/evidence';
 
 // Centralized human-readable copy for enum-typed fields, shared by portfolio.ts and
 // every component that renders one of these values.
@@ -96,11 +97,13 @@ export const MODULE_LABELS_ES: Record<ModuleKey, string> = {
   Tasks: 'Tareas',
   Search: 'Buscador de Licitaciones',
   'Regulatory Documentation': 'Documentación Regulatoria',
+  Multivault: 'Multivault',
 };
 
 export const MODULE_USAGE_STATE_LABELS_ES: Record<ModuleUsageState, string> = {
   recurring: 'Uso recurrente',
   selective: 'Uso selectivo',
+  in_use: 'En uso',
   low: 'Bajo uso',
   no_evidence: 'Sin evidencia',
   not_applicable: 'No aplica aún',
@@ -110,6 +113,25 @@ export const WORKFLOW_DEPTH_STATUS_LABELS_ES: Record<WorkflowDepthStepStatus, st
   confirmed: 'Confirmado',
   confirmed_frequent: 'Confirmado · frecuente',
   reported_no_telemetry: 'Reportado, sin telemetría',
+};
+
+export const IMPACT_LABELS_ES: Record<'positive' | 'negative' | 'neutral', string> = {
+  positive: 'Positivo',
+  negative: 'Negativo',
+  neutral: 'Neutral',
+};
+
+export const EVIDENCE_TYPE_LABELS_ES: Record<EvidenceType, string> = {
+  product_telemetry: 'Telemetría de producto',
+  meeting_transcript: 'Transcripción de reunión',
+  customer_statement: 'Declaración del cliente',
+  case_study: 'Caso de éxito',
+  customer_success_observation: 'Observación de Customer Success',
+  commercial_event: 'Evento comercial',
+  expansion_signal: 'Señal de expansión',
+  blocker: 'Bloqueador',
+  dependency: 'Dependencia',
+  product_feedback: 'Feedback de producto',
 };
 
 // Canonical HealthScore dimension display names — Customer Success OS Chapter 04 v0.1.

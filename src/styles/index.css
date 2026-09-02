@@ -53,3 +53,17 @@
     font-family: var(--font-sans);
   }
 }
+
+/* /customers/:id/report — executive print/PDF route (spec Phase I). */
+@media print {
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  body {
+    background: #fff;
+  }
+  @page {
+    margin: 16mm 14mm;
+  }
+}
