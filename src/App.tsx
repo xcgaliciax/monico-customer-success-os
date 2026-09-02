@@ -1,14 +1,22 @@
-import { getPortfolioSummary } from './lib/portfolio';
+import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { AppShell } from './components/layout/AppShell';
+import { CustomerPlaceholder } from './pages/CustomerPlaceholder';
+import { EvidencePlaceholder } from './pages/EvidencePlaceholder';
+import { InsightsPlaceholder } from './pages/InsightsPlaceholder';
+import { PortfolioHealth } from './pages/PortfolioHealth';
 
-// Placeholder only — proves the data/lib/services foundation compiles and wires
-// together end to end. Real screens are built in a later phase.
 function App() {
-  const summary = getPortfolioSummary();
-
   return (
-    <pre>
-      {JSON.stringify(summary, null, 2)}
-    </pre>
+    <BrowserRouter>
+      <Routes>
+        <Route element={<AppShell />}>
+          <Route path="/" element={<PortfolioHealth />} />
+          <Route path="/insights" element={<InsightsPlaceholder />} />
+          <Route path="/evidence" element={<EvidencePlaceholder />} />
+          <Route path="/customers/:customerId" element={<CustomerPlaceholder />} />
+        </Route>
+      </Routes>
+    </BrowserRouter>
   );
 }
 

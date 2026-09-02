@@ -1,1 +1,30 @@
 @import "tailwindcss";
+
+/* Central design tokens — change the palette/type here, not in components. */
+@theme {
+  --color-ink: #0b1220;
+  --color-ink-soft: #2b3546;
+  --color-muted: #475569;
+  --color-surface: #ffffff;
+  --color-surface-soft: #f6f7f9;
+  --color-border: #e2e5ea;
+
+  --color-accent: #1d4ed8;
+  --color-accent-soft: #eef2fe;
+
+  --color-health-green: #187048;
+  --color-health-green-soft: #e6f4ec;
+  --color-health-yellow: #8a5b00;
+  --color-health-yellow-soft: #fbf1dc;
+  --color-health-red: #b42318;
+  --color-health-red-soft: #fbe9e7;
+
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+@layer base {
+  body {
+    @apply bg-surface-soft text-ink antialiased;
+    font-family: var(--font-sans);
+  }
+}
