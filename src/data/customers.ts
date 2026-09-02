@@ -7,6 +7,7 @@ export const customers: Customer[] = [
   {
     id: 'siemens',
     name: 'Siemens',
+    headerSubtitle: 'Cuenta benchmark · México',
     arrUsd: 24000,
     billingCadence: 'annual',
     customerSince: '2025-01-01',
@@ -35,6 +36,8 @@ export const customers: Customer[] = [
     commercial: {
       status: 'upcoming',
       notes: '2026 annual license USD 24k. Payment expected Oct/Nov 2026; exact date pending confirmation.',
+      renewalConfirmed: true, // "Renewed for a second year during 2026." — key context note above
+      paymentWindowLabel: 'oct / nov 2026',
     },
   },
   {

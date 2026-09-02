@@ -14,6 +14,10 @@ export const risks: Risk[] = [
     status: 'monitoring',
     dependencyType: 'external',
     relatedDimension: 'executionRisk',
+    shortTitle: 'Documentación Regulatoria',
+    shortCause: 'Pendiente de aprobación de TI de Siemens',
+    dependencyTypeLabel: 'Dependencia externa',
+    healthImpactStatement: 'Sin impacto actual en HealthScore',
   },
   {
     id: 'risk-balle-adoption-momentum',

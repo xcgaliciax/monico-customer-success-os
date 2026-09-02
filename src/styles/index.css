@@ -1,6 +1,15 @@
 @import "tailwindcss";
 
-/* Central design tokens — change the palette/type here, not in components. */
+/* Central design tokens — change the palette/type here, not in components.
+ *
+ * Two generations coexist here on purpose:
+ *  - Legacy tokens (--color-accent, --color-muted, --color-surface-soft, --color-border,
+ *    --color-health-*) back the pre-redesign Portfolio Health screen, untouched in
+ *    Phase 3A. Do not remove them without rebuilding that screen.
+ *  - monico Design System tokens (--color-grey-*, --color-monico-blue, --color-canvas)
+ *    back the Customer 360 UI/UX Spec v0.1 (Application Shell, Customer 360, Resumen,
+ *    Adopción). New components should use these, not the legacy set.
+ */
 @theme {
   --color-ink: #0b1220;
   --color-ink-soft: #2b3546;
@@ -19,12 +28,28 @@
   --color-health-red: #b42318;
   --color-health-red-soft: #fbe9e7;
 
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  /* monico Design System — grey ramp, lightest (1) to darkest (6). */
+  --color-grey-1: #f6f7f9; /* hover backgrounds */
+  --color-grey-2: #eef0f3; /* table header / hairline fill */
+  --color-grey-3: #e2e5ea; /* hairlines, container borders */
+  --color-grey-4: #c7ccd4; /* border-only token — never used as text color */
+  --color-grey-5: #8a94a6; /* eyebrows, micro labels, minimum secondary-text color */
+  --color-grey-6: #475569; /* body copy, inactive tab labels */
+
+  --color-canvas: #fafafa; /* page background */
+  --color-monico-blue: #185fee;
+  --color-monico-blue-soft: #eef4fe;
+
+  --color-c-orange: #b45309; /* severity-baja text, "no aplica" state */
+
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial,
+    sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 
 @layer base {
   body {
-    @apply bg-surface-soft text-ink antialiased;
+    @apply bg-canvas text-ink antialiased;
     font-family: var(--font-sans);
   }
 }

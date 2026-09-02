@@ -16,4 +16,10 @@ export interface Risk {
   openedAt?: string; // ISO date
   dependencyType?: 'internal' | 'external';
   relatedDimension?: DimensionKey;
+  // Additive short-form fields for the RiskRow card (spec §12) — the long-form
+  // title/description above remain canonical for the future Riesgos/Evidencia tabs.
+  shortTitle?: string;
+  shortCause?: string;
+  dependencyTypeLabel?: string;
+  healthImpactStatement?: string;
 }

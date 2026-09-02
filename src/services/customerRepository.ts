@@ -1,16 +1,28 @@
 import { resolveHealthSnapshot } from '../lib/healthEngine';
+import { adoptionSnapshots } from '../data/adoptionSnapshots';
 import { commitments } from '../data/commitments';
 import { customers } from '../data/customers';
 import { evidence } from '../data/evidence';
 import { healthSnapshotInputs } from '../data/healthSnapshots';
+import { insights } from '../data/insights';
 import { milestones } from '../data/milestones';
+import { nextActions } from '../data/nextActions';
+import { platformTelemetrySnapshots } from '../data/platformTelemetry';
 import { risks } from '../data/risks';
+import { timelineEvents } from '../data/timelineEvents';
+import { valueMetrics } from '../data/valueMetrics';
+import type { AdoptionSnapshot } from '../types/adoption';
 import type { Commitment } from '../types/commitment';
 import type { Customer } from '../types/customer';
 import type { Evidence } from '../types/evidence';
 import type { HealthSnapshot } from '../types/healthSnapshot';
+import type { Insight, InsightSection } from '../types/insight';
 import type { Milestone } from '../types/milestone';
+import type { NextAction, NextActionScope } from '../types/nextAction';
+import type { PlatformTelemetrySnapshot } from '../types/platformTelemetry';
 import type { Risk } from '../types/risk';
+import type { TimelineEvent } from '../types/timelineEvent';
+import type { ValueMetricEntry } from '../types/valueMetric';
 
 // The ONLY module that reads from src/data/*. Every consumer (pages, lib/portfolio.ts)
 // must go through these functions so that swapping local arrays for a real API later
@@ -50,4 +62,34 @@ export function getCommitmentsForCustomer(customerId: string): Commitment[] {
 
 export function getMilestonesForCustomer(customerId: string): Milestone[] {
   return milestones.filter((milestone) => milestone.customerId === customerId);
+}
+
+export function getLatestAdoptionSnapshot(customerId: string): AdoptionSnapshot | undefined {
+  return adoptionSnapshots
+    .filter((snapshot) => snapshot.customerId === customerId)
+    .sort((a, b) => b.snapshotDate.localeCompare(a.snapshotDate))[0];
+}
+
+export function getInsightsForCustomer(customerId: string, section: InsightSection): Insight[] {
+  return insights.filter((insight) => insight.customerId === customerId && insight.section === section);
+}
+
+export function getValueMetricsForCustomer(customerId: string): ValueMetricEntry[] {
+  return valueMetrics.filter((metric) => metric.customerId === customerId);
+}
+
+export function getTimelineEventsForCustomer(customerId: string): TimelineEvent[] {
+  return timelineEvents
+    .filter((event) => event.customerId === customerId)
+    .sort((a, b) => a.date.localeCompare(b.date));
+}
+
+export function getLatestPlatformTelemetry(customerId: string): PlatformTelemetrySnapshot | undefined {
+  return platformTelemetrySnapshots
+    .filter((snapshot) => snapshot.customerId === customerId)
+    .sort((a, b) => b.snapshotDate.localeCompare(a.snapshotDate))[0];
+}
+
+export function getNextActionsForCustomer(customerId: string, scope: NextActionScope): NextAction[] {
+  return nextActions.filter((action) => action.customerId === customerId && action.scope === scope);
 }
