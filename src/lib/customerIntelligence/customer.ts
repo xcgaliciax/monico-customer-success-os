@@ -83,12 +83,9 @@ function evidenceForInsight(insight: Insight, evidence: Evidence[]): Evidence[] 
 }
 
 function evidenceForRisk(risk: Risk, evidence: Evidence[]): Evidence[] {
-  return evidence.filter(
-    (item) =>
-      item.type === 'blocker' ||
-      item.type === 'dependency' ||
-      Boolean(risk.relatedDimension && item.relatedDimension === risk.relatedDimension),
-  );
+  if (!risk.relatedEvidenceIds?.length) return [];
+
+  return evidence.filter((item) => risk.relatedEvidenceIds?.includes(item.id));
 }
 
 function buildAttentionItems(customerId: string, evidence: Evidence[]): AttentionItem[] {

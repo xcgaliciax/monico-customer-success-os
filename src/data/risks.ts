@@ -18,6 +18,7 @@ export const risks: Risk[] = [
     shortCause: 'Pendiente de aprobación de TI de Siemens',
     dependencyTypeLabel: 'Dependencia externa',
     healthImpactStatement: 'Sin impacto actual en HealthScore',
+    relatedEvidenceIds: ['ev-siemens-dependency'],
   },
   {
     id: 'risk-balle-adoption-momentum',
@@ -30,6 +31,7 @@ export const risks: Risk[] = [
     relatedDimension: 'workflowAdoption',
     shortTitle: 'Dependencia del momentum de implementación',
     shortCause: 'Sostener el uso reciente del flujo y avanzar hacia una adopción operativa durable.',
+    relatedEvidenceIds: ['ev-balle-kickoff-delay', 'ev-balle-multivault'],
   },
   {
     id: 'risk-fibroptica-role-activation',
@@ -42,5 +44,6 @@ export const risks: Risk[] = [
     relatedDimension: 'requiredRoleActivation',
     shortTitle: 'Activación de roles requeridos',
     shortCause: 'Sólo 3 de 13 usuarios están activos; falta confirmar si son los roles operativos correctos.',
+    relatedEvidenceIds: ['ev-fibroptica-adoption-breadth', 'ev-fibroptica-role-question'],
   },
 ];

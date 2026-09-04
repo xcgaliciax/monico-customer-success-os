@@ -22,4 +22,8 @@ export interface Risk {
   shortCause?: string;
   dependencyTypeLabel?: string;
   healthImpactStatement?: string;
+  // Explicit, curated evidence traceability — mirrors Insight.relatedEvidenceIds.
+  // Only evidence that directly documents this specific risk belongs here; a risk
+  // with no explicit id here has no linked evidence, never an inferred one.
+  relatedEvidenceIds?: string[];
 }
