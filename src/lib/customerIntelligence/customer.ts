@@ -1,12 +1,15 @@
 import type { Confidence, HealthStatus, Trend } from '../../types/health';
 import type { Evidence } from '../../types/evidence';
 import type { Insight } from '../../types/insight';
+import type { NextAction } from '../../types/nextAction';
 import type { Risk, RiskSeverity } from '../../types/risk';
 import {
   getCustomerById,
   getEvidenceForCustomer,
   getInsightsForCustomer,
   getLatestHealthSnapshot,
+  getNextActionForInsight,
+  getNextActionForRisk,
   getRisksForCustomer,
 } from '../../services/customerRepository';
 import { RISK_SEVERITY_RANK } from '../customer360/shared';
@@ -27,6 +30,9 @@ export interface AttentionItem {
   cause: string;
   implication?: string;
   relatedEvidence: Evidence[];
+  // The curated NextAction explicitly linked to this Risk, if one exists — see
+  // getNextActionForRisk. Never fabricated: undefined means an honest empty state.
+  nextAction?: NextAction;
 }
 
 // "Oportunidades y señales por cuenta" — positive, curated account intelligence.
@@ -43,6 +49,9 @@ export interface OpportunityItem {
   statement: string;
   confidence?: Confidence;
   relatedEvidence: Evidence[];
+  // The curated NextAction explicitly linked to this Insight, if one exists — see
+  // getNextActionForInsight. Never fabricated: undefined means no action shown.
+  nextAction?: NextAction;
 }
 
 export interface CustomerIntelligenceBrief {
@@ -94,6 +103,7 @@ function buildAttentionItems(customerId: string, evidence: Evidence[]): Attentio
       cause: risk.shortCause ?? risk.description,
       implication: risk.healthImpactStatement,
       relatedEvidence: evidenceForRisk(risk, evidence),
+      nextAction: getNextActionForRisk(risk.id),
     }))
     .sort((a, b) => RISK_SEVERITY_RANK[b.severity] - RISK_SEVERITY_RANK[a.severity]);
 }
@@ -112,6 +122,7 @@ function buildOpportunityItems(customerId: string, evidence: Evidence[]): Opport
       statement: insight.context ?? insight.statement,
       confidence: relatedEvidence[0]?.confidence,
       relatedEvidence,
+      nextAction: getNextActionForInsight(insight.id),
     }));
 }
 

@@ -29,7 +29,7 @@ export function ComercialPage() {
 
   const { header, expansionReadinessLabel, expansionMilestoneLabel } = viewModel;
   const { customer } = header;
-  const [nextAction] = getNextActionsForCustomer(customer.id);
+  const [nextAction] = getNextActionsForCustomer(customer.id, 'summary');
 
   return (
     <div className="space-y-11">

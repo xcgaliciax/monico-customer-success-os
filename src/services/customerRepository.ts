@@ -105,6 +105,18 @@ export function getNextActionsForCustomer(customerId: string, scope?: NextAction
   return nextActions.filter((action) => action.customerId === customerId && (!scope || action.scope === scope));
 }
 
+// Item-level lookups for Customer Intelligence: the curated NextAction explicitly
+// linked to one specific Risk/Insight, independent of the tab-level 'summary'
+// action above. Returns undefined rather than fabricating one when no curated
+// action has been linked to that risk/insight.
+export function getNextActionForRisk(riskId: string): NextAction | undefined {
+  return nextActions.find((action) => action.relatedRiskId === riskId);
+}
+
+export function getNextActionForInsight(insightId: string): NextAction | undefined {
+  return nextActions.find((action) => action.relatedInsightId === insightId);
+}
+
 export function getPortfolioSignals(): PortfolioSignal[] {
   return signals;
 }

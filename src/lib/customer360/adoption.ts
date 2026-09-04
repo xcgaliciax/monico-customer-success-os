@@ -99,6 +99,6 @@ export function buildCustomerAdoptionView(customerId: string): CustomerAdoptionV
     platformTelemetry: getLatestPlatformTelemetry(customerId),
     hasSufficientHistory: getHealthSnapshotsForCustomer(customerId).length >= 2,
     adoptionInsights: getInsightsForCustomer(customerId, 'adoption'),
-    nextAction: getNextActionsForCustomer(customerId)[0],
+    nextAction: getNextActionsForCustomer(customerId, 'summary')[0],
   };
 }

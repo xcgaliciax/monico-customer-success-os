@@ -18,7 +18,7 @@ export function RiesgosPage() {
   }
 
   const { header, openRisks, resolvedRisks, commitments, milestones } = viewModel;
-  const [nextAction] = getNextActionsForCustomer(header.customer.id);
+  const [nextAction] = getNextActionsForCustomer(header.customer.id, 'summary');
   const evidenceHref = `/customers/${header.customer.id}/evidence`;
 
   return (

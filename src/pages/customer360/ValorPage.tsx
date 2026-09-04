@@ -21,7 +21,7 @@ export function ValorPage() {
   }
 
   const { header, executiveMetrics, evidenceRows } = viewModel;
-  const [nextAction] = getNextActionsForCustomer(header.customer.id);
+  const [nextAction] = getNextActionsForCustomer(header.customer.id, 'summary');
 
   const columns: DataTableColumn<ValueEvidenceRow>[] = [
     { key: 'category', header: 'Tipo', widthClassName: 'w-40', render: (row) => <span className="text-grey-6">{row.evidence.category}</span> },

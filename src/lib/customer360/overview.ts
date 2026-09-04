@@ -115,7 +115,7 @@ export function buildCustomerOverview(customerId: string): CustomerOverview | un
   if (!header || !header.snapshot) return undefined;
 
   const whyScoreInsights = getInsightsForCustomer(customerId, 'why_score').slice(0, 3);
-  const [nextAction] = getNextActionsForCustomer(customerId);
+  const [nextAction] = getNextActionsForCustomer(customerId, 'summary');
   const attentionRisk = getRisksForCustomer(customerId)
     .filter((risk) => risk.status === 'open' || risk.status === 'monitoring')
     .sort((a, b) => RISK_SEVERITY_RANK[b.severity] - RISK_SEVERITY_RANK[a.severity])[0];

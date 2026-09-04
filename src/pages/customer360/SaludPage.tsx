@@ -20,7 +20,7 @@ export function SaludPage() {
 
   const { header, dimensionEvidence, highlights, hasNumericTrendHistory, override } = viewModel;
   const snapshot = header.snapshot!;
-  const [nextAction] = getNextActionsForCustomer(header.customer.id);
+  const [nextAction] = getNextActionsForCustomer(header.customer.id, 'summary');
   const evidenceHref = `/customers/${header.customer.id}/evidence`;
 
   return (

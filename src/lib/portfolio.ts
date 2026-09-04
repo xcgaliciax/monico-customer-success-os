@@ -108,7 +108,7 @@ function selectNextMilestone(milestones: Milestone[]): Milestone | undefined {
 export function getPortfolioTableRows(): PortfolioTableRow[] {
   return getCustomers().map((customer) => {
     const snapshot = getLatestHealthSnapshot(customer.id);
-    const nextAction = getNextActionsForCustomer(customer.id)[0];
+    const nextAction = getNextActionsForCustomer(customer.id, 'summary')[0];
     const nextMilestone = selectNextMilestone(getMilestonesForCustomer(customer.id));
     return {
       customer,

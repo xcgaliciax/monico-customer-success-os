@@ -52,6 +52,13 @@ function AttentionRow({ item, customerName }: { item: AttentionItem; customerNam
               <p className="mt-1 text-sm text-grey-6">{item.implication}</p>
             </div>
           )}
+
+          {item.nextAction && (
+            <div className="mt-3">
+              <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-grey-5">Siguiente acción</p>
+              <p className="mt-1 text-sm text-grey-6">{item.nextAction.headline}</p>
+            </div>
+          )}
         </div>
 
         <div className="text-left md:text-right">
@@ -81,6 +88,13 @@ function OpportunityRow({ item, customerName }: { item: OpportunityItem; custome
         <div>
           <p className="text-base font-semibold text-ink">{item.title}</p>
           <p className="mt-1 max-w-2xl text-sm leading-6 text-grey-6">{item.statement}</p>
+
+          {item.nextAction && (
+            <div className="mt-3">
+              <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-grey-5">Siguiente acción</p>
+              <p className="mt-1 text-sm text-grey-6">{item.nextAction.headline}</p>
+            </div>
+          )}
         </div>
 
         <div className="text-left md:text-right">
