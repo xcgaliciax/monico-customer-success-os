@@ -88,21 +88,30 @@ function evidenceForRisk(risk: Risk, evidence: Evidence[]): Evidence[] {
   return evidence.filter((item) => risk.relatedEvidenceIds?.includes(item.id));
 }
 
-function buildAttentionItems(customerId: string, evidence: Evidence[]): AttentionItem[] {
-  const openRisks = getRisksForCustomer(customerId).filter((risk) => risk.status === 'open' || risk.status === 'monitoring');
-
-  return openRisks
-    .map((risk) => ({
-      id: `attention-${risk.id}`,
-      customerId,
-      severity: risk.severity,
-      title: risk.shortTitle ?? risk.title,
-      cause: risk.shortCause ?? risk.description,
-      implication: risk.healthImpactStatement,
-      relatedEvidence: evidenceForRisk(risk, evidence),
-      nextAction: getNextActionForRisk(risk.id),
-    }))
+// Canonical "requires attention" rule: unresolved (open or monitoring) Risks,
+// most severe first. This is the single source of truth for what counts as
+// needing CS attention — src/lib/portfolio.ts reuses it so Panel's "Atención
+// ahora" and this module's "Qué requiere atención" can never disagree on which
+// risks qualify. Note this is Risk-based, not HealthScore-based: a risk here
+// doesn't require a yellow/red account, and a yellow/red account with no open
+// Risk selects nothing.
+export function selectAttentionRisks(risks: Risk[]): Risk[] {
+  return risks
+    .filter((risk) => risk.status === 'open' || risk.status === 'monitoring')
     .sort((a, b) => RISK_SEVERITY_RANK[b.severity] - RISK_SEVERITY_RANK[a.severity]);
+}
+
+function buildAttentionItems(customerId: string, evidence: Evidence[]): AttentionItem[] {
+  return selectAttentionRisks(getRisksForCustomer(customerId)).map((risk) => ({
+    id: `attention-${risk.id}`,
+    customerId,
+    severity: risk.severity,
+    title: risk.shortTitle ?? risk.title,
+    cause: risk.shortCause ?? risk.description,
+    implication: risk.healthImpactStatement,
+    relatedEvidence: evidenceForRisk(risk, evidence),
+    nextAction: getNextActionForRisk(risk.id),
+  }));
 }
 
 function buildOpportunityItems(customerId: string, evidence: Evidence[]): OpportunityItem[] {

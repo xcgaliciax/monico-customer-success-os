@@ -6,7 +6,8 @@ import {
   getNextActionsForCustomer,
   getRisksForCustomer,
 } from '../services/customerRepository';
-import { deriveAdoptionLevelLabel, RISK_SEVERITY_RANK } from './customer360/shared';
+import { selectAttentionRisks } from './customerIntelligence';
+import { deriveAdoptionLevelLabel } from './customer360/shared';
 import { LIFECYCLE_LABELS_ES, STATUS_LABELS_ES, TREND_LABELS_ES } from './labels';
 import type { HealthStatus } from '../types/health';
 import type { HealthSnapshot } from '../types/healthSnapshot';
@@ -86,12 +87,6 @@ export interface PortfolioTableRow {
   nextMilestoneLabel: string | undefined;
 }
 
-function selectPrimaryRisk(risks: Risk[]): Risk | undefined {
-  return risks
-    .filter((risk) => risk.status === 'open' || risk.status === 'monitoring')
-    .sort((a, b) => RISK_SEVERITY_RANK[b.severity] - RISK_SEVERITY_RANK[a.severity])[0];
-}
-
 const MILESTONE_STATUS_RANK: Record<Milestone['status'], number> = { in_progress: 2, planned: 1, reached: 0 };
 
 function selectNextMilestone(milestones: Milestone[]): Milestone | undefined {
@@ -114,16 +109,19 @@ export function getPortfolioTableRows(): PortfolioTableRow[] {
       customer,
       snapshot,
       adoptionLevelLabel: snapshot ? deriveAdoptionLevelLabel(snapshot.dimensions.workflowAdoption) : undefined,
-      primaryAttention: selectPrimaryRisk(getRisksForCustomer(customer.id)),
+      primaryAttention: selectAttentionRisks(getRisksForCustomer(customer.id))[0],
       nextMilestoneLabel: nextAction?.headline ?? nextMilestone?.title,
     };
   });
 }
 
-// Accounts requiring attention right now — Yellow or Red status. Green is never
-// shown here: yellow means attention, not failure, and green needs neither.
+// Accounts requiring attention right now — mirrors Customer Intelligence's
+// canonical selectAttentionRisks so Panel and Customer Intelligence can never
+// disagree on which accounts need attention. This is Risk-based, not
+// HealthScore-based: an account only appears here if it has at least one
+// open/monitoring Risk, regardless of its HealthScore color.
 export function getAttentionAccounts(): PortfolioTableRow[] {
-  return getPortfolioTableRows().filter((row) => row.snapshot && row.snapshot.finalStatus !== 'green');
+  return getPortfolioTableRows().filter((row) => Boolean(row.snapshot) && Boolean(row.primaryAttention));
 }
 
 export interface PortfolioReadoutItem {
