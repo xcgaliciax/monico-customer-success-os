@@ -12,6 +12,7 @@ import { ReportPage } from './pages/customer360/ReportPage';
 import { ResumenPage } from './pages/customer360/ResumenPage';
 import { RiesgosPage } from './pages/customer360/RiesgosPage';
 import { SaludPage } from './pages/customer360/SaludPage';
+import { UpdateCustomerPage } from './pages/customer360/UpdateCustomerPage';
 import { ValorPage } from './pages/customer360/ValorPage';
 
 function App() {
@@ -25,6 +26,8 @@ function App() {
           <Route path="/" element={<PanelPage />} />
           <Route path="/accounts" element={<AccountsPage />} />
           <Route path="/signals" element={<SignalsPage />} />
+
+          <Route path="/customers/:customerId/update" element={<UpdateCustomerPage />} />
 
           <Route path="/customers/:customerId" element={<Customer360Layout />}>
             <Route index element={<ResumenPage />} />
