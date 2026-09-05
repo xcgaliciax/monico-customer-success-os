@@ -21,6 +21,7 @@ export function Customer360Layout() {
   const { customer, snapshot } = viewModel;
 
   const actions: PageActionSpec[] = [
+    { id: 'update', label: 'Actualizar cliente', variant: 'secondary', href: `/customers/${customerId}/update` },
     { id: 'evidence', label: 'Ver evidencia', variant: 'secondary', href: `/customers/${customerId}/evidence` },
     { id: 'export', label: 'Exportar', variant: 'primary', href: `/customers/${customerId}/report` },
   ];
