@@ -17,6 +17,7 @@ import type {
   ChangeReviewStatus,
   NewProposedCustomerChangeInput,
   ProposedCustomerChange,
+  ProposedEntityType,
   ProposedInsightValue,
   ProposedNextActionValue,
   ProposedRiskValue,
@@ -159,6 +160,52 @@ export function discardCustomerUpdate(customerUpdateId: string): CustomerUpdate 
   const discarded: CustomerUpdate = { ...update, status: 'discarded' };
   saveCustomerUpdate(discarded);
   return discarded;
+}
+
+// Deny-by-default allowlist for automated (non-human-authored) sources — e.g. a
+// future meeting-intelligence extractor. Only entityTypes listed here may be
+// proposed this way. If ProposedEntityType ever grows a new member (e.g.
+// 'commitment', 'health_snapshot'), it does NOT automatically become available
+// to automated sources — it must be deliberately added to this Set. 'insight'
+// is intentionally excluded: Insight is a human-curated conclusion, never
+// auto-created (see lib/customerUpdate/checkInTranslation.ts).
+const AUTOMATED_ALLOWED_ENTITY_TYPES: ReadonlySet<ProposedEntityType> = new Set<ProposedEntityType>([
+  'evidence',
+  'risk',
+  'next_action',
+]);
+
+// The entry point for an automated source (a future meeting-intelligence
+// extractor, product telemetry, etc.) that has already produced structured
+// candidate changes — the automated analogue of submitCheckIn, reusing the
+// exact same addProposedCustomerChange sink so nothing about the draft ->
+// review -> publish pipeline changes for automated input. Every candidate is
+// validated BEFORE any proposal is created: an invalid batch creates nothing
+// at all, rather than partially applying the valid candidates and skipping
+// the bad one.
+export function submitAutomatedChanges(
+  customerUpdateId: string,
+  customerId: string,
+  candidates: Array<Omit<NewProposedCustomerChangeInput, 'customerUpdateId'>>,
+): ProposedCustomerChange[] {
+  const update = getCustomerUpdate(customerUpdateId);
+  if (!update) throw new Error(`CustomerUpdate not found: ${customerUpdateId}`);
+  if (update.customerId !== customerId) {
+    throw new Error(
+      `CustomerUpdate "${customerUpdateId}" belongs to customer "${update.customerId}", not "${customerId}" — refusing to attach automated changes.`,
+    );
+  }
+
+  for (const candidate of candidates) {
+    if (!AUTOMATED_ALLOWED_ENTITY_TYPES.has(candidate.entityType)) {
+      throw new Error(`Automated sources are not authorized to propose entityType "${candidate.entityType}".`);
+    }
+    if (candidate.customerId !== customerId) {
+      throw new Error(`Candidate customerId "${candidate.customerId}" does not match expected customerId "${customerId}" — refusing to rewrite it.`);
+    }
+  }
+
+  return candidates.map((candidate) => addProposedCustomerChange({ ...candidate, customerUpdateId } as NewProposedCustomerChangeInput));
 }
 
 function pick<V>(reviewStatus: ChangeReviewStatus, proposedValue: V, reviewedValue: V | undefined): V {
