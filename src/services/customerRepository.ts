@@ -7,7 +7,9 @@ import { healthSnapshotInputs } from '../data/healthSnapshots';
 import { insights } from '../data/insights';
 import { milestones } from '../data/milestones';
 import { nextActions } from '../data/nextActions';
+import { operatingStages } from '../data/operatingStages';
 import { platformTelemetrySnapshots } from '../data/platformTelemetry';
+import { productMetricSnapshots } from '../data/productMetricSnapshots';
 import { risks } from '../data/risks';
 import { signals } from '../data/signals';
 import { timelineEvents } from '../data/timelineEvents';
@@ -21,7 +23,9 @@ import type { HealthSnapshot } from '../types/healthSnapshot';
 import type { Insight, InsightSection } from '../types/insight';
 import type { Milestone } from '../types/milestone';
 import type { NextAction, NextActionScope } from '../types/nextAction';
+import type { OperatingStageSnapshot } from '../types/operatingStage';
 import type { PlatformTelemetrySnapshot } from '../types/platformTelemetry';
+import type { ProductMetricSnapshot } from '../types/productMetricSnapshot';
 import type { PortfolioSignal } from '../types/signal';
 import type { Risk } from '../types/risk';
 import type { TimelineEvent } from '../types/timelineEvent';
@@ -148,4 +152,17 @@ export function getNextActionForInsight(insightId: string): NextAction | undefin
 
 export function getPortfolioSignals(): PortfolioSignal[] {
   return signals;
+}
+
+// v0.1: one current OperatingStageSnapshot per customer, so "latest" is the
+// only one that exists — no asOf filtering here (see preWeeklyScorecard.ts for
+// how a future multi-snapshot history would be time-sliced by a caller).
+export function getOperatingStageForCustomer(customerId: string): OperatingStageSnapshot | undefined {
+  return operatingStages.find((snapshot) => snapshot.customerId === customerId);
+}
+
+export function getProductMetricSnapshotsForCustomer(customerId: string): ProductMetricSnapshot[] {
+  return productMetricSnapshots
+    .filter((snapshot) => snapshot.customerId === customerId)
+    .sort((a, b) => a.windowEnd.localeCompare(b.windowEnd));
 }
