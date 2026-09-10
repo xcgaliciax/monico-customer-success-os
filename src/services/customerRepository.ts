@@ -1,5 +1,6 @@
 import { resolveHealthSnapshot } from '../lib/healthEngine';
 import { adoptionSnapshots } from '../data/adoptionSnapshots';
+import { commercialStatusSnapshots } from '../data/commercialStatusSnapshots';
 import { commitments } from '../data/commitments';
 import { customers } from '../data/customers';
 import { evidence } from '../data/evidence';
@@ -14,8 +15,10 @@ import { risks } from '../data/risks';
 import { signals } from '../data/signals';
 import { timelineEvents } from '../data/timelineEvents';
 import { valueMetrics } from '../data/valueMetrics';
+import { weeklyActions } from '../data/weeklyActions';
 import { getOverlayEvidence, getOverlayInsights, getOverlayNextActions, getOverlayRisks } from './customerUpdateStore';
 import type { AdoptionSnapshot } from '../types/adoption';
+import type { CommercialStatusSnapshot } from '../types/commercialStatusSnapshot';
 import type { Commitment } from '../types/commitment';
 import type { Customer } from '../types/customer';
 import type { Evidence } from '../types/evidence';
@@ -30,6 +33,7 @@ import type { PortfolioSignal } from '../types/signal';
 import type { Risk } from '../types/risk';
 import type { TimelineEvent } from '../types/timelineEvent';
 import type { ValueMetricEntry } from '../types/valueMetric';
+import type { WeeklyAction } from '../types/weeklyAction';
 
 // The ONLY module that reads from src/data/*. Every consumer (pages, lib/portfolio.ts)
 // must go through these functions so that swapping local arrays for a real API later
@@ -165,4 +169,21 @@ export function getProductMetricSnapshotsForCustomer(customerId: string): Produc
   return productMetricSnapshots
     .filter((snapshot) => snapshot.customerId === customerId)
     .sort((a, b) => a.windowEnd.localeCompare(b.windowEnd));
+}
+
+// Commercial state is a time-varying assertion, same shape of reasoning as
+// HealthSnapshotInput/OperatingStageSnapshot — sorted ascending so callers can
+// pick "as of" a date the same way getHealthSnapshotsForCustomer's callers do.
+// Never merged with or derived from HealthSnapshot/ProductMetricSnapshot.
+export function getCommercialStatusSnapshotsForCustomer(customerId: string): CommercialStatusSnapshot[] {
+  return commercialStatusSnapshots
+    .filter((snapshot) => snapshot.customerId === customerId)
+    .sort((a, b) => a.snapshotDate.localeCompare(b.snapshotDate));
+}
+
+// Raw per-customer WeeklyAction records — period filtering (by weekOf) is the
+// caller's responsibility (see lib/customerIntelligence/weeklyPortfolioStatus.ts),
+// matching this repository's convention of returning unfiltered-by-date arrays.
+export function getWeeklyActionsForCustomer(customerId: string): WeeklyAction[] {
+  return weeklyActions.filter((action) => action.customerId === customerId);
 }

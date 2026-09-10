@@ -33,4 +33,11 @@ export const operatingStages: OperatingStageSnapshot[] = [
     stage: 'adopting',
     source: 'cs_manual',
   },
+  {
+    id: 'stage-asch-2026-09-08',
+    customerId: 'asch',
+    asOfDate: '2026-09-08',
+    stage: 'ready',
+    source: 'cs_manual',
+  },
 ];

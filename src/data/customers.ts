@@ -110,4 +110,23 @@ export const customers: Customer[] = [
       notes: 'Implementation + month 1 paid. Customer is considering paying the remaining annual balance in full.',
     },
   },
+  {
+    id: 'asch',
+    name: 'ASCH',
+    headerSubtitle: 'Construction vertical discovery',
+    // No contract signed yet — pre_contract. arrUsd/billingCadence/customerSince
+    // are not yet determined; PROJECT_CONTEXT.md does not cover ASCH, so no
+    // financial figures are fabricated here (spec: discovery-stage fixture only).
+    arrUsd: 0,
+    billingCadence: 'annual',
+    customerSince: '2026-09-08',
+    champions: [],
+    users: { total: 0 },
+    modulesUsed: [],
+    keyContextNotes: ['New construction vertical discovery customer. No product usage or historical baseline yet.'],
+    commercial: {
+      status: 'pending',
+      notes: 'Pre-contract discovery for a new vertical (construction). No payment or invoicing yet.',
+    },
+  },
 ];
