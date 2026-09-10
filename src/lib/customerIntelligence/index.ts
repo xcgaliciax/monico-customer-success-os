@@ -4,3 +4,4 @@ export { buildRiskAttentionItems, selectAttentionRisks } from './customerIntelli
 export * from './portfolio';
 export * from './preWeeklyScorecard';
 export * from './weeklyPortfolioStatus';
+export * from './weeklyReportContext';
