@@ -134,7 +134,7 @@ export function getPreWeeklyScorecard(customerId: string, asOf: string): PreWeek
   const operatingStage = stageSnapshot && stageSnapshot.asOfDate <= asOf ? stageSnapshot.stage : undefined;
 
   const intelligence = getCustomerIntelligence(customerId);
-  const evidence = getEvidenceForCustomer(customerId);
+  const evidence = getEvidenceForCustomer(customerId).filter((item) => item.sourceDate <= asOf);
   const mostRecentEvidenceDate = evidence
     .map((item) => item.sourceDate)
     .sort((a, b) => b.localeCompare(a))[0];
@@ -173,7 +173,7 @@ export function getPreWeeklyScorecard(customerId: string, asOf: string): PreWeek
 
     positiveSignals: intelligence?.opportunityItems ?? [],
     watchItems: intelligence?.attentionItems ?? [],
-    openBlockers: getRisksForCustomer(customerId).filter((risk) => risk.status === 'open'),
+    openBlockers: getRisksForCustomer(customerId).filter((risk) => risk.status === 'open' && (!risk.openedAt || risk.openedAt <= asOf)),
     openCommitments: getCommitmentsForCustomer(customerId).filter((commitment) => commitment.status !== 'done'),
 
     meetingObjective: undefined,

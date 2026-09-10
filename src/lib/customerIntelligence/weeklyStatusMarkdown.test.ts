@@ -35,9 +35,10 @@ describe('getWeeklyStatusMarkdown — Sep 9 benchmark', () => {
     expect(markdown).toContain('- Completados: 1');
     expect(markdown).toContain('- Errores de proyecto: 2');
     expect(markdown).toContain('Commercial Standing:');
-    expect(markdown).toContain('- Standing: Healthy');
+    expect(markdown).toContain('- Standing: Attention');
     expect(markdown).toContain('Resultado: Parcial (partial)');
-    expect(markdown).toContain('Sin Weekly Actions planeadas registradas para este ciclo.');
+    expect(markdown).toContain('Completar rerun técnico end-to-end exitoso.');
+    expect(markdown).toContain('Compromiso explícito de pago / fecha.');
   });
 
   it('renders Grupo Balle activity facts', () => {

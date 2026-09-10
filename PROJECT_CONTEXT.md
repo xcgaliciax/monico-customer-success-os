@@ -87,6 +87,20 @@ Use local structured data.
 
 ---
 
+# Data language policy
+
+Persisted human-readable Customer Success content should be stored in Spanish.
+
+This includes Evidence statements, Risk titles/descriptions/causes, Commercial
+Status free-text fields, WeeklyAction action/result text, customer notes and
+other stored narrative fields. Keep TypeScript identifiers, ids, enum values and
+machine statuses unchanged. Established monico operating/product terms may
+remain in English when natural, including Health, Customer Success, Operating
+Stage, Commercial Standing, First Value, Happy Path, Review, Risk, Blocker,
+Search, workflow, output and champion.
+
+---
+
 # Initial application structure
 
 Suggested architecture:

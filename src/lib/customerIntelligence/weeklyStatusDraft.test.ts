@@ -80,14 +80,27 @@ describe('WeeklyStatusDraft — Sep 9 customer facts', () => {
       projectsCompletedInWindow: 1,
       projectsErroredInWindow: 2,
     });
-    expect(manprec.statusNow.commercial.value?.id).toBe('commercial-manprec-2026-09-08');
-    expect(manprec.attention.riskAttention.value).toEqual([]);
+    expect(manprec.statusNow.commercial.value?.id).toBe('commercial-manprec-2026-09-09');
+    expect(manprec.statusNow.commercial.value?.commercialStatus).toBe('attention');
+    expect(manprec.attention.riskAttention.value.map((item) => item.id)).toEqual([
+      'attention-risk-manprec-technical-workflow-completion',
+    ]);
+    expect(manprec.attention.commercialAttention.value.map((item) => item.id)).toEqual([
+      'commercial-attention-commercial-manprec-2026-09-09',
+    ]);
     expect(manprec.reviewedActions.value.map((review) => ({ id: review.action.id, outcome: review.outcome }))).toEqual([
       { id: 'wa-manprec-first-invoice', outcome: 'partial' },
     ]);
-    expect(manprec.plannedActions.value).toEqual([]);
-    expect(manprec.expectedResultsForNextWednesday.value).toEqual([]);
-    expect(manprec.expectedResultsForNextWednesday.caveats).toContain('No plannedCycle WeeklyAction exists for this customer.');
+    expect(manprec.plannedActions.value.map((review) => review.action.id)).toEqual([
+      'wa-manprec-technical-rerun-2026-09-09',
+      'wa-manprec-manual-time-baseline-2026-09-09',
+      'wa-manprec-payment-commitment-2026-09-09',
+    ]);
+    expect(manprec.expectedResultsForNextWednesday.value).toEqual([
+      'Rerun exitoso.',
+      'Baseline de tiempo manual.',
+      'Compromiso explícito de pago / fecha.',
+    ]);
   });
 
   it('maps Grupo Balle activity facts', () => {
@@ -121,6 +134,7 @@ describe('WeeklyStatusDraft — Sep 9 customer facts', () => {
 
     expect(asch.currentOperatingStage.value).toBe('ready');
     expect(asch.statusNow.commercial.value?.commercialStatus).toBe('pre_contract');
+    expect(asch.statusNow.commercial.value?.id).toBe('commercial-asch-2026-09-09');
     expect(asch.statusNow.health.value).toBeUndefined();
     expect(asch.activity.value).toEqual([]);
     expect(asch.statusNow.product.value).toEqual([]);
@@ -168,8 +182,16 @@ describe('WeeklyStatusDraft — actions and human sections', () => {
     expect(fibroptica.carryForwardCandidates.value.map((review) => review.action.id)).toEqual([
       'wa-fibroptica-role-activation-followup',
     ]);
-    expect(fibroptica.plannedActions.value).toEqual([]);
-    expect(fibroptica.expectedResultsForNextWednesday.value).toEqual([]);
+    expect(fibroptica.plannedActions.value.map((review) => review.action.id)).toEqual([
+      'wa-fibroptica-reschedule-session-2026-09-09',
+      'wa-fibroptica-contract-nda-review-2026-09-09',
+      'wa-fibroptica-value-validation-2026-09-09',
+    ]);
+    expect(fibroptica.expectedResultsForNextWednesday.value).toEqual([
+      'Fecha de reunión confirmada.',
+      'Ruta de respuesta legal definida.',
+      'Al menos una declaración explícita reciente de resultado/valor.',
+    ]);
   });
 
   it('leaves interpretation and human-decision placeholders unfilled with correct automation levels', () => {
@@ -205,7 +227,7 @@ describe('WeeklyStatusDraft — traceability', () => {
 
     expect(manprec.activity.sourceRefs).toEqual([{ entityType: 'product_metric_snapshot', id: 'metrics-manprec-2026-09-08' }]);
     expect(manprec.statusNow.commercial.sourceRefs).toEqual([
-      { entityType: 'commercial_status_snapshot', id: 'commercial-manprec-2026-09-08' },
+      { entityType: 'commercial_status_snapshot', id: 'commercial-manprec-2026-09-09' },
     ]);
     expect(manprec.reviewedActions.sourceRefs).toEqual([{ entityType: 'weekly_action', id: 'wa-manprec-first-invoice' }]);
   });

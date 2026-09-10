@@ -120,7 +120,11 @@ describe('weekly report action loop', () => {
     const manprec = findCustomer(report, 'manprec');
 
     expect(manprec.actionLoop.plannedCycle.weekOf).toBe('2026-09-09');
-    expect(manprec.actionLoop.plannedCycle.actions).toEqual([]);
+    expect(manprec.actionLoop.plannedCycle.actions.map((review) => review.action.id)).toEqual([
+      'wa-manprec-technical-rerun-2026-09-09',
+      'wa-manprec-manual-time-baseline-2026-09-09',
+      'wa-manprec-payment-commitment-2026-09-09',
+    ]);
   });
 
   it('maps WeeklyActionStatus to deterministic outcomes without prose inference', () => {
@@ -138,9 +142,17 @@ describe('weekly report action loop', () => {
     const grupoBalle = findCustomer(report, 'grupo-balle');
 
     expect(siemens.actionLoop.carryForwardCandidates.map((review) => review.action.id)).toEqual(['wa-siemens-confirm-payment-date']);
-    expect(siemens.actionLoop.plannedCycle.actions).toEqual([]);
+    expect(siemens.actionLoop.plannedCycle.actions.map((review) => review.action.id)).toEqual([
+      'wa-siemens-lam-followup-2026-09-09',
+      'wa-siemens-procurement-connectors-2026-09-09',
+    ]);
     expect(fibroptica.actionLoop.carryForwardCandidates.map((review) => review.action.id)).toEqual([
       'wa-fibroptica-role-activation-followup',
+    ]);
+    expect(fibroptica.actionLoop.plannedCycle.actions.map((review) => review.action.id)).toEqual([
+      'wa-fibroptica-reschedule-session-2026-09-09',
+      'wa-fibroptica-contract-nda-review-2026-09-09',
+      'wa-fibroptica-value-validation-2026-09-09',
     ]);
     expect(grupoBalle.actionLoop.carryForwardCandidates).toEqual([]);
   });

@@ -299,11 +299,23 @@ describe('Decision 2 — attention categories are kept explicitly separate', () 
     expect(item.cause).toBe('Invoice overdue 45 days.');
   });
 
-  it('real seed accounts are all healthy or pre_contract, so commercialAttention is empty across the real portfolio today', () => {
+  it('commercialAttention remains empty for the Sep 8 portfolio before the Manprec Sep 9 commercial update', () => {
     const status = getWeeklyPortfolioStatus('2026-09-08');
     for (const customer of status.customers) {
       expect(customer.commercialAttention).toEqual([]);
     }
+  });
+
+  it('Manprec is the only Sep 9 real portfolio commercialAttention case', () => {
+    const status = getWeeklyPortfolioStatus('2026-09-09');
+
+    expect(findCustomer(status, 'manprec').commercialStatusSnapshot?.commercialStatus).toBe('attention');
+    expect(findCustomer(status, 'manprec').commercialAttention.map((item) => item.id)).toEqual([
+      'commercial-attention-commercial-manprec-2026-09-09',
+    ]);
+    expect(findCustomer(status, 'grupo-balle').commercialAttention).toEqual([]);
+    expect(findCustomer(status, 'fibroptica').commercialAttention).toEqual([]);
+    expect(findCustomer(status, 'asch').commercialAttention).toEqual([]);
   });
 });
 
