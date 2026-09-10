@@ -312,8 +312,8 @@ describe('Decision 1 — commercial naming: no "Health" vocabulary in the commer
     expect(readSource('../../types/commercialStatusSnapshot.ts')).not.toContain('CommercialHealthStatus');
   });
 
-  it('weeklyPortfolioStatus.ts imports CommercialStanding, not a "Health"-named commercial type', () => {
-    const source = readSource('./weeklyPortfolioStatus.ts');
+  it('commercial attention selectors import CommercialStanding, not a "Health"-named commercial type', () => {
+    const source = readSource('./customerIntelligenceSelectors.ts');
     expect(source).toContain('CommercialStanding');
     expect(source).not.toContain('CommercialHealthStatus');
   });

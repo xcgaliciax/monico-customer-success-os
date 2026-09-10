@@ -9,10 +9,20 @@ import {
   getRisksForCustomer,
   getWeeklyActionsForCustomer,
 } from '../../services/customerRepository';
-import { getCustomerIntelligence, type AttentionItem } from './customer';
+import {
+  buildCommercialAttention,
+  buildMissingInformation,
+  buildRiskAttentionItems,
+  canonicalizeProductMetricSnapshotsAsOf,
+  selectLatestProductMetricSnapshotAsOf,
+  selectPeriodSnapshots,
+  type AttentionItem,
+  type CommercialAttentionItem,
+  type MissingInformationItem,
+} from './customerIntelligenceSelectors';
 import { latestAtOrBefore } from './preWeeklyScorecard';
 import type { Commitment } from '../../types/commitment';
-import type { CommercialStanding, CommercialStatusSnapshot } from '../../types/commercialStatusSnapshot';
+import type { CommercialStatusSnapshot } from '../../types/commercialStatusSnapshot';
 import type { Customer } from '../../types/customer';
 import type { Evidence } from '../../types/evidence';
 import type { NextAction } from '../../types/nextAction';
@@ -20,6 +30,14 @@ import type { OperatingStage } from '../../types/operatingStage';
 import type { ProductMetricSnapshot } from '../../types/productMetricSnapshot';
 import type { Risk } from '../../types/risk';
 import type { WeeklyAction } from '../../types/weeklyAction';
+
+export {
+  buildCommercialAttention,
+  canonicalizeProductMetricSnapshots,
+  isFullyWithinPeriod,
+  selectPeriodSnapshots,
+} from './customerIntelligenceSelectors';
+export type { CommercialAttentionItem, MissingInformationField, MissingInformationItem } from './customerIntelligenceSelectors';
 
 // getWeeklyPortfolioStatus — the deterministic core of the CS Intelligence
 // Service, and the structured source for the recurring Wednesday Weekly
@@ -62,37 +80,6 @@ export interface WeeklyPortfolioSummary {
   projectErrorsInPeriod: number;
 }
 
-// Derived only from CommercialStatusSnapshot — never from Risk, never from
-// HealthSnapshot/ProductMetricSnapshot. commercialStatus here is always
-// 'attention' | 'critical' | 'unknown' (an existing snapshot asserting it
-// doesn't know); 'healthy' and 'pre_contract' never produce an item. No
-// severity field — never comparable/sortable against RiskSeverity.
-export interface CommercialAttentionItem {
-  id: string;
-  customerId: string;
-  commercialStatus: CommercialStanding;
-  cause?: string; // verbatim CommercialStatusSnapshot.commercialRisk — never inferred
-  nextCommercialAction?: string; // verbatim passthrough
-}
-
-// Purely mechanical, non-judgmental data-completeness facts. Never a Risk,
-// never a severity, never an inferred conclusion — just "this field was
-// undefined as of this date" or "no snapshot fully covers this period".
-export type MissingInformationField =
-  | 'productMetricSnapshot'
-  | 'commercialStatusSnapshot'
-  | 'operatingStage'
-  | 'periodCoverage';
-
-export interface MissingInformationItem {
-  id: string;
-  customerId: string;
-  field: MissingInformationField;
-  asOf: string;
-  periodStart?: string; // set only when field === 'periodCoverage'
-  periodEnd?: string; // set only when field === 'periodCoverage'
-}
-
 export interface CustomerWeeklyStatus {
   customerId: string;
   customerName: string;
@@ -131,144 +118,21 @@ function defaultPeriodStart(periodEnd: string): string {
   return end.toISOString().slice(0, 10);
 }
 
-// Exported for direct unit testing with synthetic fixtures (see
-// weeklyPortfolioStatus.test.ts) — same convention as preWeeklyScorecard.ts's
-// latestAtOrBefore/previousOf.
-//
-// Canonicalizes by (customerId, windowStart, windowEnd): when more than one
-// ProductMetricSnapshot exists for the same window (e.g. a corrected re-entry),
-// the one with the latest snapshotDate wins. Ties break deterministically on
-// id (lexicographic) rather than depending on input/array order. ALL downstream
-// metric logic (historical totals, recentProductMetricSnapshot, period sums)
-// must run on this canonicalized set, never on the raw repository array.
-export function canonicalizeProductMetricSnapshots(snapshots: ProductMetricSnapshot[]): ProductMetricSnapshot[] {
-  const canonicalByWindow = new Map<string, ProductMetricSnapshot>();
-
-  for (const snapshot of snapshots) {
-    const key = `${snapshot.customerId}|${snapshot.windowStart}|${snapshot.windowEnd}`;
-    const existing = canonicalByWindow.get(key);
-    if (!existing || isMoreCanonical(snapshot, existing)) {
-      canonicalByWindow.set(key, snapshot);
-    }
-  }
-
-  return Array.from(canonicalByWindow.values()).sort((a, b) => a.windowEnd.localeCompare(b.windowEnd));
-}
-
-function isMoreCanonical(candidate: ProductMetricSnapshot, current: ProductMetricSnapshot): boolean {
-  if (candidate.snapshotDate !== current.snapshotDate) {
-    return candidate.snapshotDate > current.snapshotDate;
-  }
-  return candidate.id > current.id;
-}
-
-// A snapshot's counters are pre-aggregated over its own window and can never
-// be prorated onto a different window — so "does this snapshot belong to the
-// period" must be full containment, never partial overlap.
-export function isFullyWithinPeriod(snapshot: ProductMetricSnapshot, periodStart: string, periodEnd: string): boolean {
-  return snapshot.windowStart >= periodStart && snapshot.windowEnd <= periodEnd;
-}
-
-// The exact set of canonical snapshots that may contribute to period sums:
-// fully contained in [periodStart, periodEnd], and not dated after `asOf`.
-// Exported so both buildSummary and the missingInformation/period-coverage
-// check share one definition of "usable period coverage" — see
-// weeklyPortfolioStatus.test.ts for direct synthetic-fixture coverage.
-export function selectPeriodSnapshots(
-  canonicalSnapshots: ProductMetricSnapshot[],
-  asOf: string,
-  periodStart: string,
-  periodEnd: string,
-): ProductMetricSnapshot[] {
-  return canonicalSnapshots.filter(
-    (snapshot) => snapshot.windowEnd <= asOf && isFullyWithinPeriod(snapshot, periodStart, periodEnd),
-  );
-}
-
 function hasFullPeriodCoverage(canonicalSnapshots: ProductMetricSnapshot[], asOf: string, periodStart: string, periodEnd: string): boolean {
   return selectPeriodSnapshots(canonicalSnapshots, asOf, periodStart, periodEnd).length > 0;
 }
 
-function getCanonicalProductMetricSnapshotsForCustomer(customerId: string): ProductMetricSnapshot[] {
-  return canonicalizeProductMetricSnapshots(getProductMetricSnapshotsForCustomer(customerId));
-}
-
-const COMMERCIAL_ATTENTION_STATUSES: ReadonlySet<CommercialStanding> = new Set(['attention', 'critical', 'unknown']);
-
-// pre_contract and healthy never produce an item — being new/pre-contract is
-// an expected lifecycle state, not itself something requiring attention (same
-// principle as "zero activity is not an inferred risk"). Exported for direct
-// unit testing with synthetic CommercialStatusSnapshot fixtures — the real
-// seed data has no 'attention'/'critical'/'unknown' account today, so those
-// paths can only be exercised against fabricated data, never the real seed.
-export function buildCommercialAttention(customerId: string, snapshot: CommercialStatusSnapshot | undefined): CommercialAttentionItem[] {
-  if (!snapshot || !COMMERCIAL_ATTENTION_STATUSES.has(snapshot.commercialStatus)) return [];
-
-  return [
-    {
-      id: `commercial-attention-${snapshot.id}`,
-      customerId,
-      commercialStatus: snapshot.commercialStatus,
-      cause: snapshot.commercialRisk,
-      nextCommercialAction: snapshot.nextCommercialAction,
-    },
-  ];
-}
-
-interface MissingInformationInputs {
-  operatingStage: OperatingStage | undefined;
-  commercialStatusSnapshot: CommercialStatusSnapshot | undefined;
-  recentProductMetricSnapshot: ProductMetricSnapshot | undefined;
-  hasAnyMetricSnapshots: boolean;
-  hasPeriodCoverage: boolean;
-}
-
-// No CommercialStatusSnapshot at all -> missingInformation ('commercialStatusSnapshot').
-// An existing snapshot with commercialStatus 'unknown' -> commercialAttention, NOT here.
-// An existing snapshot with commercialStatus 'pre_contract' -> neither list.
-function buildMissingInformation(
-  customerId: string,
-  asOf: string,
-  periodStart: string,
-  periodEnd: string,
-  inputs: MissingInformationInputs,
-): MissingInformationItem[] {
-  const items: MissingInformationItem[] = [];
-
-  if (!inputs.recentProductMetricSnapshot) {
-    items.push({ id: `missing-${customerId}-productMetricSnapshot-${asOf}`, customerId, field: 'productMetricSnapshot', asOf });
-  }
-  if (!inputs.commercialStatusSnapshot) {
-    items.push({ id: `missing-${customerId}-commercialStatusSnapshot-${asOf}`, customerId, field: 'commercialStatusSnapshot', asOf });
-  }
-  if (!inputs.operatingStage) {
-    items.push({ id: `missing-${customerId}-operatingStage-${asOf}`, customerId, field: 'operatingStage', asOf });
-  }
-  // Only flagged when the customer has metric history at all but none of it
-  // fully covers the requested period (e.g. a partially-overlapping snapshot,
-  // or history that predates the period) — a customer with zero snapshots
-  // ever is already fully covered by the 'productMetricSnapshot' item above;
-  // flagging both would be redundant noise for the same underlying gap.
-  if (inputs.hasAnyMetricSnapshots && !inputs.hasPeriodCoverage) {
-    items.push({
-      id: `missing-${customerId}-periodCoverage-${periodStart}-${periodEnd}`,
-      customerId,
-      field: 'periodCoverage',
-      asOf,
-      periodStart,
-      periodEnd,
-    });
-  }
-
-  return items;
+function getCanonicalProductMetricSnapshotsForCustomer(customerId: string, asOf: string): ProductMetricSnapshot[] {
+  return canonicalizeProductMetricSnapshotsAsOf(getProductMetricSnapshotsForCustomer(customerId), asOf);
 }
 
 function buildCustomerWeeklyStatus(customer: Customer, asOf: string, periodStart: string, periodEnd: string): CustomerWeeklyStatus {
   const stageSnapshot = getOperatingStageForCustomer(customer.id);
   const operatingStage = stageSnapshot && stageSnapshot.asOfDate <= asOf ? stageSnapshot.stage : undefined;
 
-  const canonicalMetricSnapshots = getCanonicalProductMetricSnapshotsForCustomer(customer.id);
-  const recentProductMetricSnapshot = latestAtOrBefore(canonicalMetricSnapshots, asOf, (snapshot) => snapshot.windowEnd);
+  const rawMetricSnapshots = getProductMetricSnapshotsForCustomer(customer.id);
+  const canonicalMetricSnapshots = canonicalizeProductMetricSnapshotsAsOf(rawMetricSnapshots, asOf);
+  const recentProductMetricSnapshot = selectLatestProductMetricSnapshotAsOf(rawMetricSnapshots, asOf);
   const periodCoverage = hasFullPeriodCoverage(canonicalMetricSnapshots, asOf, periodStart, periodEnd);
 
   const commercialSnapshots = getCommercialStatusSnapshotsForCustomer(customer.id);
@@ -278,28 +142,30 @@ function buildCustomerWeeklyStatus(customer: Customer, asOf: string, periodStart
     (action) => action.weekOf >= periodStart && action.weekOf <= periodEnd,
   );
 
-  const intelligence = getCustomerIntelligence(customer.id);
+  const evidence = getEvidenceForCustomer(customer.id);
+  const risks = getRisksForCustomer(customer.id);
+  const nextActions = getNextActionsForCustomer(customer.id);
 
   return {
     customerId: customer.id,
     customerName: customer.name,
     operatingStage,
     recentProductMetricSnapshot,
-    evidence: getEvidenceForCustomer(customer.id),
-    risks: getRisksForCustomer(customer.id),
+    evidence,
+    risks,
     commitments: getCommitmentsForCustomer(customer.id),
-    nextActions: getNextActionsForCustomer(customer.id),
+    nextActions,
     commercialStatusSnapshot,
     weeklyActions: weeklyActionsInPeriod,
-    riskAttention: intelligence?.attentionItems ?? [],
+    riskAttention: buildRiskAttentionItems(risks, evidence, nextActions),
     commercialAttention: buildCommercialAttention(customer.id, commercialStatusSnapshot),
-    missingInformation: buildMissingInformation(customer.id, asOf, periodStart, periodEnd, {
+    missingInformation: buildMissingInformation(customer.id, asOf, {
       operatingStage,
       commercialStatusSnapshot,
-      recentProductMetricSnapshot,
-      hasAnyMetricSnapshots: canonicalMetricSnapshots.length > 0,
+      productMetricSnapshot: recentProductMetricSnapshot,
+      hasAnyMetricSnapshots: rawMetricSnapshots.length > 0,
       hasPeriodCoverage: periodCoverage,
-    }),
+    }, { periodStart, periodEnd }),
     expectedResults: weeklyActionsInPeriod.map((action) => action.expectedResult),
   };
 }
@@ -312,7 +178,7 @@ function buildSummary(customers: Customer[], asOf: string, periodStart: string, 
   let projectErrorsInPeriod = 0;
 
   for (const customer of customers) {
-    const canonicalMetricSnapshots = getCanonicalProductMetricSnapshotsForCustomer(customer.id);
+    const canonicalMetricSnapshots = getCanonicalProductMetricSnapshotsForCustomer(customer.id, asOf);
 
     const recent = latestAtOrBefore(canonicalMetricSnapshots, asOf, (snapshot) => snapshot.windowEnd);
     if (recent) {

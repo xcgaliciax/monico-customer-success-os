@@ -158,11 +158,19 @@ export function getPortfolioSignals(): PortfolioSignal[] {
   return signals;
 }
 
-// v0.1: one current OperatingStageSnapshot per customer, so "latest" is the
-// only one that exists — no asOf filtering here (see preWeeklyScorecard.ts for
-// how a future multi-snapshot history would be time-sliced by a caller).
+export function getOperatingStageSnapshotsForCustomer(customerId: string): OperatingStageSnapshot[] {
+  return operatingStages
+    .filter((snapshot) => snapshot.customerId === customerId)
+    .sort((a, b) => a.asOfDate.localeCompare(b.asOfDate));
+}
+
+// v0.1 seed data has one current OperatingStageSnapshot per customer. This
+// keeps the existing "current stage" accessor while the plural read path above
+// lets as-of consumers select the latest valid snapshot without bypassing this
+// repository boundary.
 export function getOperatingStageForCustomer(customerId: string): OperatingStageSnapshot | undefined {
-  return operatingStages.find((snapshot) => snapshot.customerId === customerId);
+  const snapshots = getOperatingStageSnapshotsForCustomer(customerId);
+  return snapshots[snapshots.length - 1];
 }
 
 export function getProductMetricSnapshotsForCustomer(customerId: string): ProductMetricSnapshot[] {

@@ -2,38 +2,21 @@ import type { Confidence, HealthStatus, Trend } from '../../types/health';
 import type { Evidence } from '../../types/evidence';
 import type { Insight } from '../../types/insight';
 import type { NextAction } from '../../types/nextAction';
-import type { Risk, RiskSeverity } from '../../types/risk';
 import {
   getCustomerById,
   getEvidenceForCustomer,
   getInsightsForCustomer,
   getLatestHealthSnapshot,
   getNextActionForInsight,
-  getNextActionForRisk,
+  getNextActionsForCustomer,
   getRisksForCustomer,
 } from '../../services/customerRepository';
-import { RISK_SEVERITY_RANK } from '../customer360/shared';
+import { buildRiskAttentionItems, type AttentionItem } from './customerIntelligenceSelectors';
+export type { AttentionItem } from './customerIntelligenceSelectors';
 
 // Opportunity kind is a display label only — it never gates whether an insight
 // appears (that gate is: why_score section + no linked negative-impact evidence).
 export type OpportunityKind = 'opportunity' | 'adoption' | 'value' | 'health';
-
-// "Qué requiere atención" — unresolved Risks only. Insights are curated closed
-// conclusions (see types/insight.ts) and are never actionable-by-definition, so
-// they can never appear here. This is the single place that decides what counts
-// as requiring CS attention for the intelligence layer.
-export interface AttentionItem {
-  id: string;
-  customerId: string;
-  severity: RiskSeverity;
-  title: string;
-  cause: string;
-  implication?: string;
-  relatedEvidence: Evidence[];
-  // The curated NextAction explicitly linked to this Risk, if one exists — see
-  // getNextActionForRisk. Never fabricated: undefined means an honest empty state.
-  nextAction?: NextAction;
-}
 
 // "Oportunidades y señales por cuenta" — positive, curated account intelligence.
 // Never a Risk, never labeled with a severity. Sourced only from why_score
@@ -82,12 +65,6 @@ function evidenceForInsight(insight: Insight, evidence: Evidence[]): Evidence[] 
   return evidence.filter((item) => insight.relatedEvidenceIds?.includes(item.id));
 }
 
-function evidenceForRisk(risk: Risk, evidence: Evidence[]): Evidence[] {
-  if (!risk.relatedEvidenceIds?.length) return [];
-
-  return evidence.filter((item) => risk.relatedEvidenceIds?.includes(item.id));
-}
-
 // Canonical "requires attention" rule: unresolved (open or monitoring) Risks,
 // most severe first. This is the single source of truth for what counts as
 // needing CS attention — src/lib/portfolio.ts reuses it so Panel's "Atención
@@ -95,23 +72,8 @@ function evidenceForRisk(risk: Risk, evidence: Evidence[]): Evidence[] {
 // risks qualify. Note this is Risk-based, not HealthScore-based: a risk here
 // doesn't require a yellow/red account, and a yellow/red account with no open
 // Risk selects nothing.
-export function selectAttentionRisks(risks: Risk[]): Risk[] {
-  return risks
-    .filter((risk) => risk.status === 'open' || risk.status === 'monitoring')
-    .sort((a, b) => RISK_SEVERITY_RANK[b.severity] - RISK_SEVERITY_RANK[a.severity]);
-}
-
 function buildAttentionItems(customerId: string, evidence: Evidence[]): AttentionItem[] {
-  return selectAttentionRisks(getRisksForCustomer(customerId)).map((risk) => ({
-    id: `attention-${risk.id}`,
-    customerId,
-    severity: risk.severity,
-    title: risk.shortTitle ?? risk.title,
-    cause: risk.shortCause ?? risk.description,
-    implication: risk.healthImpactStatement,
-    relatedEvidence: evidenceForRisk(risk, evidence),
-    nextAction: getNextActionForRisk(risk.id),
-  }));
+  return buildRiskAttentionItems(getRisksForCustomer(customerId), evidence, getNextActionsForCustomer(customerId));
 }
 
 function buildOpportunityItems(customerId: string, evidence: Evidence[]): OpportunityItem[] {
