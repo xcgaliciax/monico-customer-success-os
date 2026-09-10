@@ -5,3 +5,4 @@ export * from './portfolio';
 export * from './preWeeklyScorecard';
 export * from './weeklyPortfolioStatus';
 export * from './weeklyReportContext';
+export * from './weeklyStatusDraft';
