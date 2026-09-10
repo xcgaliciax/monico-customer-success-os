@@ -6,3 +6,4 @@ export * from './preWeeklyScorecard';
 export * from './weeklyPortfolioStatus';
 export * from './weeklyReportContext';
 export * from './weeklyStatusDraft';
+export * from './weeklyStatusMarkdown';
